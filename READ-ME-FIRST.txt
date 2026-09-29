@@ -1,0 +1,84 @@
+HCIS - Government box
+Three tools, and when to reach for each
+
+29 September 2026
+
+
+WHY THESE ARE SEPARATE FROM EVERYTHING ELSE
+
+  The Government box and the office server are two different machines with
+  two different databases. They do not share accounts. A password that works
+  on one will not work on the other, and I cannot reach the Government box
+  from here - only you can, standing at it.
+
+  These run on that machine, by double-click, and none of them needs me.
+
+
+FIRST - UNPACK IT
+
+  Right-click the zip, choose Extract All, and put it somewhere plain like
+  C:\HCIS_update. Then run from THAT folder.
+
+  Running a .bat straight out of the zip window copies only that one file to
+  a temporary folder and leaves the sql folder behind. Each file checks for
+  this and will tell you, but it is easier to extract it properly.
+
+
+1-WHATS-WRONG.bat        somebody cannot sign in
+
+  Reads the database and changes nothing whatsoever.
+
+  It lists every account with whether it is switched on, whether it is locked
+  out after too many failed attempts, and whether a password is set. It then
+  checks the data API - the service the browser actually talks to - because
+  the database can hold the sign-in function perfectly well while the API has
+  never been told about it. That exact case cost us a morning.
+
+  It leaves HCIS-login-report.txt beside itself. Send me that file.
+
+
+2-RESET-MY-PASSWORD.bat  put one account back into service
+
+  Asks for a username and a new password. The password is typed masked - it
+  is not shown on screen and not written to any file.
+
+  It sets the password, switches the account back on, and clears any lockout.
+  One account only; nothing else is touched.
+
+  Then it signs in with those credentials through the API, the same way the
+  browser does, and tells you whether they actually work. If it says
+  CONFIRMED, they will work in the browser. If it says the API is not
+  answering, the password is set correctly but the service needs starting.
+
+
+3-CHECK-AFTER-LOADING-DATA.bat    after loading a database from the old system
+
+  Run this straight after the load, BEFORE anybody opens payroll. It reads
+  only and changes nothing.
+
+  Payroll pays a care giver for the people they look after, and that link is
+  one field on the beneficiary's record holding the care giver's ID. If the
+  load carries the OLD system's numbering, every one of those fields will be
+  filled in, nothing will look blank, and they will all point at care givers
+  who do not exist here. Payroll then pays nobody, for a reason that is
+  invisible on every screen.
+
+  So the test is not how many are filled in. It is how many point at somebody
+  who is actually on this machine.
+
+  It ends with one of four verdicts, in words:
+
+    PASS           - linked to care givers who exist here. Good.
+    FAILED         - so many links point nowhere. Send me the number.
+    NO LINKS       - everybody is here, nobody is assigned.
+    NOTHING LOADED - there are no beneficiaries at all.
+
+  Anything other than PASS: send me the file and stop there.
+
+
+WHAT NONE OF THESE TOUCH
+
+  No beneficiary, care giver, payroll or leave record is ever written by any
+  of them. They count those records so we can see the box is the one we think
+  it is. Only file 2 writes anything at all, and only to a single row of the
+  accounts table.
