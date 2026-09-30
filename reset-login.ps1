@@ -85,16 +85,40 @@ Write-Host ''
 Say ("Setting the password for `"{0}`" ..." -f $Username)
 Write-Host ''
 
-& $psql -q -U $DbUser -d $Db -v ON_ERROR_STOP=1 `
-        -v ("usr=" + $Username) -v ("pwd=" + $Password) -f $sql
+# Capture what psql says as well as showing it, so the summary below can name
+# the actual cause instead of guessing at one.
+$out = & $psql -q -U $DbUser -d $Db -v ON_ERROR_STOP=1 `
+        -v ("usr=" + $Username) -v ("pwd=" + $Password) -f $sql 2>&1
 $rc = $LASTEXITCODE
+$out | ForEach-Object { Write-Host $_ }
+$text = ($out | Out-String)
 
 Write-Host ''
 if ($rc -ne 0) {
+    # This used to say "the username does not exist" whatever had gone wrong.
+    # On 30 September the real cause was the DATABASE password being refused,
+    # and that message sent the client looking for a problem with his account
+    # that was never there. A guess stated as fact is worse than no guess.
     Say '------------------------------------------------------------' 'Red'
     Say 'IT DID NOT WORK. Nothing was changed.' 'Red'
-    Say 'The message above usually says the username does not exist on' 'Red'
-    Say 'this box. Run step 1 to see the real list of usernames.' 'Red'
+    Write-Host ''
+    if ($text -match 'authentication failed|password authentication|no password supplied') {
+        Say 'Cause: the DATABASE password was refused.' 'Yellow'
+        Say 'This is nothing to do with the account you are resetting - that' 'Yellow'
+        Say 'account is fine. The script could not get into PostgreSQL at all.' 'Yellow'
+        Say 'Make sure you are running the CURRENT version of this folder,' 'Yellow'
+        Say 'which supplies that password itself and never asks you for it.' 'Yellow'
+    } elseif ($text -match 'could not connect|Connection refused|server closed') {
+        Say 'Cause: PostgreSQL is not reachable on this machine.' 'Yellow'
+        Say 'The database service may be stopped. Send me a photo.' 'Yellow'
+    } elseif ($text -match 'There is no account called') {
+        Say ('Cause: there is no account called "' + $Username + '" on this box.') 'Yellow'
+        Say 'Run 1-WHATS-WRONG.bat to see the real list of usernames.' 'Yellow'
+    } elseif ($text -match 'at least 10 characters') {
+        Say 'Cause: the password was too short. Try again with 10 or more.' 'Yellow'
+    } else {
+        Say 'The message above says why. Send me a photo of this window.' 'Yellow'
+    }
     Say '------------------------------------------------------------' 'Red'
     exit 1
 }
