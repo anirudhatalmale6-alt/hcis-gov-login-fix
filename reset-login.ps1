@@ -21,6 +21,12 @@ param(
     [string]$Password = '',
     [string]$Db       = 'hcis_db',
     [string]$DbUser   = 'postgres',
+    # The DATABASE password, which is not the same thing as the account
+    # password this script sets. Without it psql stops and asks for it, and the
+    # window sits there apparently frozen mid-reset. That is exactly what
+    # happened to the client on 30 September: his new password had been
+    # accepted and the script then stalled before it could save it.
+    [string]$DbPassword = 'HcisStaging@2026',
     [string]$PgBin    = '',
     [string]$ApiUrl   = 'http://localhost:3000'
 )
@@ -42,6 +48,8 @@ if (-not $PgBin) {
 }
 if (-not $PgBin) { Say 'psql.exe was not found on this machine.' 'Red'; exit 1 }
 $psql = Join-Path $PgBin 'psql.exe'
+
+if ($DbPassword -and -not $env:PGPASSWORD) { $env:PGPASSWORD = $DbPassword }
 
 Write-Host ''
 Say 'This sets a new password for ONE account, switches it back on and'
