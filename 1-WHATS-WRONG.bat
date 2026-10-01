@@ -5,7 +5,19 @@ REM  STEP 1 - find out why the sign in is refused. Changes nothing.
 REM ============================================================
 setlocal
 set HERE=%~dp0
-set PGPASSWORD=HcisStaging@2026
+REM The database password is no longer written in here - these files are
+REM published publicly. It is read from the machine instead, put there once
+REM by SET-DB-PASSWORD.bat.
+set PGPASSWORD=
+if exist "C:\HCIS\db-password.txt" set /p PGPASSWORD=<"C:\HCIS\db-password.txt"
+if not defined PGPASSWORD (
+  echo.
+  echo   The database password has not been set up on this machine yet.
+  echo   Run SET-DB-PASSWORD.bat once, then run this again.
+  echo.
+  pause
+  exit /b 1
+)
 set DB=hcis_db
 set DBUSER=postgres
 set SITE=C:\HCIS\wwwroot

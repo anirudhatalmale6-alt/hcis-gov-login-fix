@@ -26,7 +26,7 @@ param(
     # window sits there apparently frozen mid-reset. That is exactly what
     # happened to the client on 30 September: his new password had been
     # accepted and the script then stalled before it could save it.
-    [string]$DbPassword = 'HcisStaging@2026',
+    [string]$DbPassword = '',
     [string]$PgBin    = '',
     [string]$ApiUrl   = 'http://localhost:3000'
 )
@@ -49,7 +49,13 @@ if (-not $PgBin) {
 if (-not $PgBin) { Say 'psql.exe was not found on this machine.' 'Red'; exit 1 }
 $psql = Join-Path $PgBin 'psql.exe'
 
-if ($DbPassword -and -not $env:PGPASSWORD) { $env:PGPASSWORD = $DbPassword }
+# The database password is no longer written into this file - it used to be,
+# and these scripts are published publicly. db-access.ps1 finds it: already in
+# the environment, or saved on this machine by SET-DB-PASSWORD.bat, or it asks
+# once. Without it psql stops and waits for input and the window looks frozen.
+if ($DbPassword) { $env:PGPASSWORD = $DbPassword }
+. (Join-Path $PSScriptRoot 'db-access.ps1')
+if (-not (Set-DbPassword)) { exit 1 }
 
 Write-Host ''
 Say 'This sets a new password for ONE account, switches it back on and'
